@@ -122,10 +122,10 @@ class UpdateResourcesLib extends XGPCore
             }
         }
 
-        $Caps['planet_metal_perhour'] *= 100 + self::getProductionBonusMultiplierByPlanetType("metal", $current_planet['planet_planet']);
-        $Caps['planet_crystal_perhour'] *= 100 + self::getProductionBonusMultiplierByPlanetType("crystal", $current_planet['planet_planet']);
-        $Caps['planet_deuterium_perhour'] *= 100 + self::getProductionBonusMultiplierByPlanetType("deuterium", $current_planet['planet_planet']);
-        $Caps['planet_energy_max'] *= 100 + self::getProductionBonusMultiplierByPlanetType("energy", $current_planet['planet_planet']);
+        $Caps['planet_metal_perhour'] *= 100 + self::getProductionBonusMultiplierByPlanetPosition("metal", $current_planet['planet_planet']);
+        $Caps['planet_crystal_perhour'] *= 100 + self::getProductionBonusMultiplierByPlanetPosition("crystal", $current_planet['planet_planet']);
+        $Caps['planet_deuterium_perhour'] *= 100 + self::getProductionBonusMultiplierByPlanetPosition("deuterium", $current_planet['planet_planet']);
+        $Caps['planet_energy_max'] *= 100 + self::getProductionBonusMultiplierByPlanetPosition("energy", $current_planet['planet_planet']);
 
         if ($current_planet['planet_type'] == 3) {
 
