@@ -185,7 +185,6 @@ $lang['gl_collect']							= 'Recolectar';
 $lang['gl_resources']						= 'Recursos';
 $lang['gl_features']						= 'Características';
 $lang['gl_diameter']						= 'Diámetro';
-$lang['gl_temperature']						= 'Temperatura';
 $lang['gl_phalanx']							= 'Phalanx';
 $lang['gl_planet_destroyed']				= 'Planeta destruido';
 $lang['gl_player']							= 'Jugador ';
@@ -1180,10 +1179,6 @@ $lang['ccs_other_user']						= '¡Error de cookies! ¡Su cookie no corresponde c
 $lang['css_different_password']				= '¡Error de cookies! ¡Error de sesión, debe conectarse de nuevo! Debe eliminar sus cookies. En caso de problemas contacte al administrador.';
 $lang['css_account_banned_message']			= 'SU CUENTA HA SIDO SUSPENDIDA';
 $lang['css_account_banned_expire']			= 'Expiraci&oacute;n:';
-
-//----------------------------------------------------------------------------//
-//class.debug.php
-$lang['cdg_error_message']					= 'Error, por favor contacte al administrador.';
 
 //----------------------------------------------------------------------------//
 // FLEET MOVEMENTS

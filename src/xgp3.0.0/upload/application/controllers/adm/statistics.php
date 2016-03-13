@@ -30,102 +30,118 @@ use application\libraries\FunctionsLib;
  */
 class Statistics extends XGPCore
 {
-	private $_lang;
-	private $_current_user;
+    private $langs;
+    private $current_user;
 
-	/**
-	 * __construct()
-	 */
-	public function __construct()
-	{
-		parent::__construct();
+    /**
+     * __construct()
+     */
+    public function __construct()
+    {
+        parent::__construct();
 
-		// check if session is active
-		parent::$users->check_session();
+        // check if session is active
+        AdministrationLib::checkSession();
 
-		$this->_lang			= parent::$lang;
-		$this->_current_user	= parent::$users->get_user_data();
+        $this->langs        = parent::$lang;
+        $this->current_user = parent::$users->getUserData();
 
-		// Check if the user is allowed to access
-		if ( AdministrationLib::have_access ( $this->_current_user['user_authlevel'] ) && AdministrationLib::authorization ( $this->_current_user['user_authlevel'] , 'config_game' ) == 1 )
-		{
-			$this->build_page();
-		}
-		else
-		{
-			die ( FunctionsLib::message ( $this->_lang['ge_no_permissions'] ) );
-		}
-	}
+        // Check if the user is allowed to access
+        if (AdministrationLib::haveAccess($this->current_user['user_authlevel'])
+            && AdministrationLib::authorization($this->current_user['user_authlevel'], 'config_game') == 1) {
 
-	/**
-	 * method __destruct
-	 * param
-	 * return close db connection
-	 */
-	public function __destruct ()
-	{
-		parent::$db->closeConnection();
-	}
+            $this->buildPage();
+        } else {
 
-	/**
-	 * method build_page
-	 * param
-	 * return main method, loads everything
-	 */
-	private function build_page()
-	{
-		$game_stat				= FunctionsLib::read_config ( 'stat' );
-		$game_stat_level		= FunctionsLib::read_config ( 'stat_level' );
-		$game_stat_settings		= FunctionsLib::read_config ( 'stat_settings' );
-		$game_stat_update_time	= FunctionsLib::read_config ( 'stat_update_time' );
-		$this->_lang['alert']	= '';
+            die(AdministrationLib::noAccessMessage($this->langs['ge_no_permissions']));
+        }
+    }
 
-		if ( isset ( $_POST['save'] ) && ( $_POST['save'] == $this->_lang['cs_save_changes'] ) )
-		{
-			if ( isset ( $_POST['stat'] ) && $_POST['stat'] != $game_stat )
-			{
-				FunctionsLib::update_config ( 'stat' , $_POST['stat'] );
+    /**
+     * method __destruct
+     * param
+     * return close db connection
+     */
+    public function __destruct()
+    {
+        parent::$db->closeConnection();
+    }
 
-				$game_stat	= $_POST['stat'];
-				$ASD3		= $_POST['stat'];
-			}
+    /**
+     * method build_page
+     * param
+     * return main method, loads everything
+     */
+    private function buildPage()
+    {
+        $game_stat_level        = FunctionsLib::readConfig('stat_admin_level');
+        $game_stat_settings     = FunctionsLib::readConfig('stat_points');
+        $game_stat_update_time  = FunctionsLib::readConfig('stat_update_time');
+        $this->langs['alert']   = '';
 
-			if ( isset ( $_POST['stat_level'] ) && is_numeric ( $_POST['stat_level'] ) && $_POST['stat_level'] != $game_stat_level )
-			{
-				FunctionsLib::update_config ( 'stat_level' ,  $_POST['stat_level'] );
+        if (isset($_POST['save']) && ($_POST['save'] == $this->langs['cs_save_changes'])) {
 
-				$game_stat_level 	= $_POST['stat_level'];
-				$ASD1				= $_POST['stat_level'];
-			}
+            if (isset($_POST['stat_admin_level']) && is_numeric($_POST['stat_admin_level']) && $_POST['stat_admin_level'] != $game_stat_level) {
 
-			if ( isset ( $_POST['stat_settings'] ) &&  is_numeric ( $_POST['stat_settings'] ) && $_POST['stat_settings'] != $game_stat_settings )
-			{
-				FunctionsLib::update_config ( 'stat_settings' ,  $_POST['stat_settings'] );
+                FunctionsLib::updateConfig('stat_admin_level', $_POST['stat_admin_level']);
 
-				$game_stat_settings  = $_POST['stat_settings'];
-			}
+                $game_stat_level    = $_POST['stat_admin_level'];
+                $ASD1               = $_POST['stat_admin_level'];
+            }
 
-			if ( isset ( $_POST['stat_update_time'] ) && is_numeric ( $_POST['stat_update_time'] ) && $_POST['stat_update_time'] != $game_stat_update_time )
-			{
-				FunctionsLib::update_config ( 'stat_update_time' ,  $_POST['stat_update_time'] );
+            if (isset($_POST['stat_points']) && is_numeric($_POST['stat_points']) && $_POST['stat_points'] != $game_stat_settings) {
+                FunctionsLib::updateConfig('stat_points', $_POST['stat_points']);
 
-				$game_stat_update_time	= $_POST['stat_update_time'];
-			}
+                $game_stat_settings = $_POST['stat_points'];
+            }
 
-			$this->_lang['alert']		= AdministrationLib::save_message ( 'ok' , $this->_lang['cs_all_ok_message'] );
-		}
+            if (isset($_POST['stat_update_time']) && is_numeric($_POST['stat_update_time']) && $_POST['stat_update_time'] != $game_stat_update_time) {
 
-		$selected						=	"selected=\"selected\"";
-		$stat							=	( ( $game_stat == 1 ) ? 'sel_sta1' : 'sel_sta0' );
-		$this->_lang[$stat]				=	$selected;
-		$this->_lang['stat_level']		=	$game_stat_level;
-		$this->_lang['stat_settings']	=	$game_stat_settings;
-		$this->_lang['stat_update_time']=	$game_stat_update_time;
-		$this->_lang['yes']				=	$this->_lang['cs_yes'][1];
-		$this->_lang['no']				=	$this->_lang['cs_no'][0];
+                FunctionsLib::updateConfig('stat_update_time', $_POST['stat_update_time']);
 
-		parent::$page->display ( parent::$page->parse_template ( parent::$page->get_template ( 'adm/statistics_view' ) , $this->_lang ) );
-	}
+                $game_stat_update_time  = $_POST['stat_update_time'];
+            }
+
+            $this->langs['alert']   = AdministrationLib::saveMessage('ok', $this->langs['cs_all_ok_message']);
+        }
+
+        $this->langs['stat_admin_level']    = $game_stat_level;
+        $this->langs['stat_points']         = $game_stat_settings;
+        $this->langs['stat_update_time']    = $game_stat_update_time;
+        $this->langs['yes']                 = $this->langs['cs_yes'][1];
+        $this->langs['no']                  = $this->langs['cs_no'][0];
+        $this->langs['admin_levels']        = $this->adminLevels($game_stat_level);
+        
+        parent::$page->display(
+            parent::$page->parseTemplate(parent::$page->getTemplate('adm/statistics_view'),
+            $this->langs)
+        );
+    }
+    
+    /**
+     * adminLevels
+     * 
+     * @param string $selected Selected level
+     * 
+     * @return string
+     */
+    private function adminLevels($selected)
+    {
+        $options    = '';
+
+        foreach ($this->langs['user_level'] as $id => $name) {
+
+            if ($selected == $id) {
+                $sel    = 'selected="selected"';
+            } else {
+                $sel    = '';
+            }
+            
+            $options    .= '<option value="' . $id . '" ' . $sel . '>' . $name . '</option>\n';
+        }
+        
+        return $options;
+    }
 }
 
 /* end of statistics.php */

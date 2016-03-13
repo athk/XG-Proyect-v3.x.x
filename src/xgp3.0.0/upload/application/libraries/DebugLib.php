@@ -127,37 +127,34 @@ class DebugLib extends XGPCore
      */
     public function error($message, $title)
     {
-        if (FunctionsLib::read_config('debug') == 1) {
+        if (DEBUG_MODE == true) {
 
             echo '<h2>'.$title.'</h2><br><font color="red">' . $message . '</font><br><hr>';
             echo $this->echoLog();
             echo $this->whereCalled(3);
         } else {
 
-            if (isset(parent::$users->get_user_data)) {
-
-                $user_id    = parent::$users->get_user_data()['user_id'];
-            } else {
-                $user_id    = 0;
-            }
+            $user_ip    = $_SERVER['REMOTE_ADDR'];
 
             // format log
-            $log    = '|' . $user_id . '|'. $title .'|' . $message . '|' . $this->whereCalled(3) . '|';
+            $log    = '|' . $user_ip . '|'. $title .'|' . $message . '|' . $this->whereCalled(3) . '|';
 
             // log the error
             $this->writeErrors($log, "ErrorLog");
-
-            $headers    =  'MIME-Version: 1.0' . "\r\n";
-            $headers    .= 'From: XG Proyect ' . FunctionsLib::read_config('admin_email') . "\r\n";
-            $headers    .= 'Content-type: text/html; charset=utf-8' . "\r\n";
             
             // notify administrator
-            @mail(
-                FunctionsLib::read_config('admin_email'),
-                '[DEBUG][' . $title . ']',
-                $this->whereCalled(3),
-                $headers
-            );
+            if (defined('ERROR_LOGS_MAIL') && ERROR_LOGS_MAIL != '') {
+                $headers    =  'MIME-Version: 1.0' . "\r\n";
+                $headers    .= 'From: XG Proyect ' . ERROR_LOGS_MAIL . "\r\n";
+                $headers    .= 'Content-type: text/html; charset=utf-8' . "\r\n";
+                
+                @mail(
+                    ERROR_LOGS_MAIL,
+                    '[DEBUG][' . $title . ']',
+                    $this->whereCalled(3),
+                    $headers
+                );   
+            }
 
             // show page to the user
             echo '<!DOCTYPE html>
@@ -206,7 +203,7 @@ class DebugLib extends XGPCore
 
         $fp     =   @fopen($file, "a");
         $date   =   $text;
-        $date   .=  date(FunctionsLib::read_config('date_format_extended'), time()) . "||\n";
+        $date   .=  date('Y/m/d H:i:s', time()) . "||\n";
 
         @fwrite($fp, $date);
         @fclose($fp);

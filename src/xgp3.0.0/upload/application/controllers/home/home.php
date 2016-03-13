@@ -73,8 +73,9 @@ class Home extends XGPCore
             $login  = parent::$db->queryFetch(
                 "SELECT `user_id`, `user_name`, `user_password`, `user_banned`
                 FROM " . USERS . "
-                WHERE `user_name` = '" . parent::$db->escapeValue($_POST['login']) . "'
-                AND `user_password` = '" . sha1($_POST['pass']) . "'
+                WHERE (`user_name` = '" . parent::$db->escapeValue($_POST['login']) . "'
+                    OR `user_email` = '" . parent::$db->escapeValue($_POST['login']) . "')
+                    AND `user_password` = '" . sha1($_POST['pass']) . "'
                 LIMIT 1"
             );
 
@@ -85,7 +86,7 @@ class Home extends XGPCore
             if ($login) {
 
                 // User login
-                if (parent::$users->user_login($login['user_id'], $login['user_name'], $login['user_password'])) {
+                if (parent::$users->userLogin($login['user_id'], $login['user_name'], $login['user_password'])) {
 
                     // Update current planet
                     parent::$db->query(
@@ -103,17 +104,17 @@ class Home extends XGPCore
             FunctionsLib::redirect('index.php');
         } else {
             $parse['year']          = date('Y');
-            $parse['version']       = VERSION;
-            $parse['servername']    = FunctionsLib::read_config('game_name');
-            $parse['game_logo']     = FunctionsLib::read_config('game_logo');
-            $parse['forum_url']     = FunctionsLib::read_config('forum_url');
+            $parse['version']       = SYSTEM_VERSION;
+            $parse['servername']    = FunctionsLib::readConfig('game_name');
+            $parse['game_logo']     = FunctionsLib::readConfig('game_logo');
+            $parse['forum_url']     = FunctionsLib::readConfig('forum_url');
             $parse['js_path']       = JS_PATH . 'home/';
             $parse['css_path']      = CSS_PATH . 'home/';
             $parse['img_path']      = IMG_PATH . 'home/';
             $parse['base_path']     = BASE_PATH;
 
             parent::$page->display(
-                parent::$page->parse_template(parent::$page->get_template('home/index_body'), $parse),
+                parent::$page->parseTemplate(parent::$page->getTemplate('home/index_body'), $parse),
                 false,
                 '',
                 false

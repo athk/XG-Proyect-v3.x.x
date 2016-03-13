@@ -187,7 +187,6 @@ $lang['gl_collect']							= 'Harvest';
 $lang['gl_resources']						= 'Resources';
 $lang['gl_features']						= 'Features';
 $lang['gl_diameter']						= 'Diameter';
-$lang['gl_temperature']						= 'Temperature';
 $lang['gl_phalanx']							= 'Phalanx';
 $lang['gl_planet_destroyed']				= 'Planet destroyed';
 $lang['gl_player']							= '';
@@ -1139,8 +1138,8 @@ $lang['sys_expe_found_goods'] 				= "The fleet has discovered an unmanned spacec
 $lang['sys_expe_found_ships'] 				= "Your scouts have found an abandoned squad, dominated it and come back. <br> Squadron:";
 $lang['sys_expe_back_home'] 				= "Your expedition returned to the hangar.";
 $lang['sys_mess_transport'] 				= "Transport Fleet";
-$lang['sys_tran_mess_owner'] 				= "One of your fleet reaches %s %s and deliver their goods: %s de %s, %s de %s y %s of %s.";
-$lang['sys_tran_mess_user']  				= "Found a fleet de% s% s% s coming in his libro% s% s% s units, units de% s% s% s% s units.";
+$lang['sys_tran_mess_owner'] 				= "Your fleet has reached the planet %s %s and delivered its goods:<br>%s: %s %s: %s %s: %s.";
+$lang['sys_tran_mess_user']  				= "Your fleet is returning from planet %s %s.<br><br>The fleet is delivering %s %s, %s %s and %s %s.";
 $lang['sys_mess_fleetback'] 				= "Return of the fleet";
 $lang['sys_tran_mess_back'] 				= "A fleet back to planet % s% s. The fleet does not give resources.";
 $lang['sys_recy_gotten'] 					= "Your fleet arrived at the coordinates indicated and gatherers %s units %s and %s units of %s.";
@@ -1174,10 +1173,6 @@ $lang['ccs_other_user']						= 'Cookie error! Your cookie does not match the use
 $lang['css_different_password']				= 'Cookie error! Session error, must connect again! You must delete your cookies. In case of problems contact the administrator.';
 $lang['css_account_banned_message']			= 'YOUR ACCOUNT HAS BEEN SUSPENDED';
 $lang['css_account_banned_expire']			= 'Expiration:';
-
-//----------------------------------------------------------------------------//
-//class.debug.php
-$lang['cdg_error_message']					= 'Error, please contact the administrator.';
 
 //----------------------------------------------------------------------------//
 // FLEET MOVEMENTS

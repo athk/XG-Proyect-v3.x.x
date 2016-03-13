@@ -38,26 +38,29 @@ class Installation extends XGPCore
 
     /**
      * __construct()
+     *
+     * @return void
      */
     public function __construct()
     {
         parent::__construct();
 
         $this->langs    = parent::$lang;
-        $this->_planet  = FunctionsLib::load_library('PlanetLib');
+        $this->_planet  = FunctionsLib::loadLibrary('PlanetLib');
 
         if ($this->serverRequirementes()) {
             
             $this->buildPage();
         } else {
-            die(FunctionsLib::message($this->langs['ins_no_server_requirements']));
+
+            die(FunctionsLib::message($this->langs['ins_no_server_requirements'], '', '', false, false));
         }
     }
 
     /**
-     * method __destruct
-     * param
-     * return close db connection
+     * __destruct
+     *
+     * @return void
      */
     public function __destruct()
     {
@@ -65,76 +68,80 @@ class Installation extends XGPCore
     }
 
     /**
-     * method buildPage
-     * param
-     * return main method, loads everything
+     * buildPage
+     *
+     * @return void
      */
     private function buildPage()
     {
         $parse      = $this->langs;
         $continue   = true;
 
+        // VERIFICATION - WE NEED THE config DIR WRITABLE
+        if (!$this->isWritable()) {
+            die(FunctionsLib::message($this->langs['ins_not_writable'], '', '', false, false));
+        }
+        
         // VERIFICATION - WE DON'T WANT ANOTHER INSTALLATION
         if ($this->isInstalled()) {
-
             die(FunctionsLib::message($this->langs['ins_already_installed'], '', '', false, false));
-        }
-
-        if (!$this->checkXmlFile()) {
-            
-            die(FunctionsLib::message($this->langs['ins_missing_xml_file'], '', '', false, false));
         }
 
         // ACTION FOR THE CURRENT PAGE
         switch ((isset($_POST['page']) ? $_POST['page'] : '')) {
             case 'step1':
+                
                 $this->host     = $_POST['host'];
-                $this->name     = $_POST['db'];
                 $this->user     = $_POST['user'];
                 $this->password = $_POST['password'];
+                $this->name     = $_POST['db'];
                 $this->prefix   = $_POST['prefix'];
 
                 if (!$this->validateDbData()) {
-                    
                     $alerts     = $this->langs['ins_empty_fields_error'];
                     $continue   = false;
                 }
 
-                if (!$this->writeConfigFile()) {
-                    
+                if ($continue && !$this->tryConnection()) {
+                    $alerts     = $this->langs['ins_not_connected_error'];
+                    $continue   = false;
+                }
+
+                if ($continue && !$this->tryDatabase()) {
+                    $alerts     = $this->langs['ins_db_not_exists'];
+                    $continue   = false;
+                }
+
+                if ($continue && !$this->writeConfigFile()) {
                     $alerts     = $this->langs['ins_write_config_error'];
                     $continue   = false;
                 }
 
                 if ($continue) {
-                    
-                    FunctionsLib::redirect('?page=install&mode=step2');
+                    FunctionsLib::redirect('?page=installation&mode=step2');
                 }
 
-                $parse['alert'] = $this->saveMessage($alerts, 'warning');
+                $parse['alert']     = $this->saveMessage($alerts, 'warning');
+                $parse['v_host']    = $this->host;
+                $parse['v_db']      = $this->name;
+                $parse['v_user']    = $this->user;
+                $parse['v_prefix']  = $this->prefix;
                 
-                $current_page   = parent::$page->parse_template(
-                    parent::$page->get_template('install/in_database_view'),
+                $current_page   = parent::$page->parseTemplate(
+                    parent::$page->getTemplate('install/in_database_view'),
                     $parse
                 );
                 
                 break;
 
             case 'step2':
-                if (!$this->tryConnection()) {
-                    
-                    $alerts     = $this->langs['ins_not_connected_error'];
-                    $continue   = false;
-                }
-
                 if ($continue) {
-                    
-                    FunctionsLib::redirect('?page=install&mode=step3');
+                    FunctionsLib::redirect('?page=installation&mode=step3');
                 }
 
                 $parse['alert'] = $this->saveMessage($alerts, 'warning');
-                $current_page   = parent::$page->parse_template(
-                    parent::$page->get_template('install/in_database_view'),
+                $current_page   = parent::$page->parseTemplate(
+                    parent::$page->getTemplate('install/in_database_view'),
                     $parse
                 );
 
@@ -142,45 +149,60 @@ class Installation extends XGPCore
 
             case 'step3':
                 if (!$this->insertDbData()) {
-                    
                     $alerts     = $this->langs['ins_insert_tables_error'];
                     $continue   = false;
                 }
 
                 if ($continue) {
                     
-                    FunctionsLib::redirect('?page=install&mode=step4');
+                    FunctionsLib::redirect('?page=installation&mode=step4');
                 }
 
                 $parse['alert'] = $this->saveMessage($alerts, 'warning');
-                $current_page   = parent::$page->parse_template(
-                    parent::$page->get_template('install/in_database_view'),
+                $current_page   = parent::$page->parseTemplate(
+                    parent::$page->getTemplate('install/in_database_view'),
                     $parse
                 );
                 break;
 
             case 'step4':
-                FunctionsLib::redirect('?page=install&mode=step5');
+                FunctionsLib::redirect('?page=installation&mode=step5');
                 break;
 
             case 'step5':
-                if (!$this->createAccount()) {
+                $create_account_status = $this->createAccount();
+
+                if ($create_account_status < 0) {
+
+                    // Failure
+                    if ($create_account_status == -1) {
+
+                        $error_message  = $this->langs['ins_adm_empty_fields_error'];
+                    } else {
+
+                        $error_message  = $this->langs['ins_adm_invalid_email_address'];
+                    }
                     
-                    $parse['alert'] = $this->saveMessage($this->langs['ins_adm_empty_fields_eror'], 'warning');
-                    $current_page   = parent::$page->parse_template(
-                        parent::$page->get_template('install/in_create_admin_view'),
+                    $parse['alert'] = $this->saveMessage($error_message, 'warning');
+
+                    $current_page   = parent::$page->parseTemplate(
+                        parent::$page->getTemplate('install/in_create_admin_view'),
                         $parse
                     );
+
                     $continue       = false;
                 }
 
                 if ($continue) {
-                    
-                    FunctionsLib::update_config('stat_last_update', time());
-                    FunctionsLib::update_config('game_installed', '1');
 
-                    $current_page   = parent::$page->parse_template(
-                        parent::$page->get_template('install/in_create_admin_done_view'),
+                    // set last stat update
+                    FunctionsLib::updateConfig('stat_last_update', time());
+                    
+                    // set the installation language to the game language
+                    FunctionsLib::updateConfig('lang', FunctionsLib::getCurrentLanguage());
+                    
+                    $current_page   = parent::$page->parseTemplate(
+                        parent::$page->getTemplate('install/in_create_admin_done_view'),
                         $this->langs
                     );
                     
@@ -195,11 +217,12 @@ class Installation extends XGPCore
         }
 
         if ($continue) {
-            
+
             switch ((isset($_GET['mode']) ? $_GET['mode'] : '')) {
+
                 case 'step1':
-                    $current_page   = parent::$page->parse_template(
-                        parent::$page->get_template('install/in_database_view'),
+                    $current_page   = parent::$page->parseTemplate(
+                        parent::$page->getTemplate('install/in_database_view'),
                         $this->langs
                     );
 
@@ -207,11 +230,11 @@ class Installation extends XGPCore
 
                 case 'step2':
                     $parse['step']              = 'step2';
-                    $parse['done_config']       = $this->langs['ins_done_config'];
-                    $parse['done_connected']    = '';
+                    $parse['done_config']       = '';
+                    $parse['done_connected']    = $this->langs['ins_done_connected'];
                     $parse['done_insert']       = '';
-                    $current_page               = parent::$page->parse_template(
-                        parent::$page->get_template('install/in_done_actions_view'),
+                    $current_page               = parent::$page->parseTemplate(
+                        parent::$page->getTemplate('install/in_done_actions_view'),
                         $parse
                     );
 
@@ -219,11 +242,11 @@ class Installation extends XGPCore
 
                 case 'step3':
                     $parse['step']              = 'step3';
-                    $parse['done_config']       = '';
-                    $parse['done_connected']    = $this->langs['ins_done_connected'];
+                    $parse['done_config']       = $this->langs['ins_done_config'];
+                    $parse['done_connected']    = '';
                     $parse['done_insert']       = '';
-                    $current_page               = parent::$page->parse_template(
-                        parent::$page->get_template('install/in_done_actions_view'),
+                    $current_page               = parent::$page->parseTemplate(
+                        parent::$page->getTemplate('install/in_done_actions_view'),
                         $parse
                     );
 
@@ -234,8 +257,8 @@ class Installation extends XGPCore
                     $parse['done_config']       = '';
                     $parse['done_connected']    = '';
                     $parse['done_insert']       = $this->langs['ins_done_insert'];
-                    $current_page               = parent::$page->parse_template(
-                        parent::$page->get_template('install/in_done_actions_view'),
+                    $current_page               = parent::$page->parseTemplate(
+                        parent::$page->getTemplate('install/in_done_actions_view'),
                         $parse
                     );
 
@@ -243,16 +266,16 @@ class Installation extends XGPCore
 
                 case 'step5':
                     $parse['step']  = 'step5';
-                    $current_page   = parent::$page->parse_template(
-                        parent::$page->get_template('install/in_create_admin_view'),
+                    $current_page   = parent::$page->parseTemplate(
+                        parent::$page->getTemplate('install/in_create_admin_view'),
                         $parse
                     );
 
                     break;
 
                 case 'license':
-                    $current_page   = parent::$page->parse_template(
-                        parent::$page->get_template('install/in_license_view'),
+                    $current_page   = parent::$page->parseTemplate(
+                        parent::$page->getTemplate('install/in_license_view'),
                         $this->langs
                     );
 
@@ -261,8 +284,8 @@ class Installation extends XGPCore
                 case '':
                 case 'overview':
                 default:
-                    $current_page   = parent::$page->parse_template(
-                        parent::$page->get_template('install/in_welcome_view'),
+                    $current_page   = parent::$page->parseTemplate(
+                        parent::$page->getTemplate('install/in_welcome_view'),
                         $this->langs
                     );
 
@@ -290,36 +313,115 @@ class Installation extends XGPCore
     }
 
     /**
-     * method isInstalled
-     * param
-     * return true if the game is already installed, false if not
+     * isWritable
+     *
+     * @return boolean
+     */
+    private function isWritable()
+    {
+        $config_dir    = XGP_ROOT . 'application/config/';
+        
+        return is_writable($config_dir);
+    }
+    
+    /**
+     * isInstalled
+     *
+     * @return boolean
      */
     private function isInstalled()
     {
-        return (FunctionsLib::read_config('game_installed') == 1);
-    }
+        // if file not exists
+        $config_file    = XGP_ROOT . 'application/config/config.php';
 
-    /**
-     * method tryConnection
-     * param
-     * return true if the required server requirements are met
-     */
-    private function tryConnection()
-    {
-        // Try & check
-        if (parent::$db->tryConnection() && parent::$db->tryDatabase()) {
-            
-            return true;
-        } else {
+        if (!file_exists($config_file) or filesize($config_file) == 0) {
             
             return false;
         }
+        
+        // if no db object
+        if (parent::$db == null) {
+
+            return false;
+        }
+        
+        // check if tables exist
+        if (!$this->tablesExists()) {
+            
+            return false;
+        }
+        
+        // check for admin account
+        if (!$this->adminExists()) {
+            
+            return false;
+        }
+        
+        return true;
     }
 
     /**
-     * method writeConfigFile
-     * param
-     * return write configuration file
+     * tablesExists
+     *
+     * @return boolean
+     */
+    private function tablesExists()
+    {
+        $result = parent::$db->query("SHOW TABLES FROM " . DB_NAME);
+        $arr    = [];
+        
+        while ($row = parent::$db->fetchArray($result)) {
+
+            if (strpos($row[0], DB_PREFIX) !== false) {
+                $arr[]  = $row[0];
+            }
+        }
+
+        if (count($arr) > 0) {
+
+            return true;
+        }
+        
+        return false;
+    }
+    
+    /**
+     * adminExists
+     *
+     * @return boolean
+     */
+    private function adminExists()
+    {
+        return parent::$db->queryFetch(
+            "SELECT COUNT(`user_id`) as count FROM " . USERS . " 
+                WHERE `user_id` = '1' OR `user_authlevel` = '3';"
+        )['count'] >= 1;
+    }
+    
+    /**
+     * tryConnection
+     *
+     * @return boolean
+     */
+    private function tryConnection()
+    {
+        return parent::$db->tryConnection($this->host, $this->user, $this->password);
+    }
+    
+    /**
+     * tryDatabase
+     *
+     * @return boolean
+     */
+    private function tryDatabase()
+    {
+        return parent::$db->tryDatabase($this->name);
+    }
+
+    /**
+     * writeConfigFile
+     *
+     * @return boolean
      */
     private function writeConfigFile()
     {
@@ -327,7 +429,7 @@ class Installation extends XGPCore
 
         if (!$config_file) {
             
-                return false;
+            return false;
         }
 
         $data   = "<?php\n";
@@ -339,16 +441,27 @@ class Installation extends XGPCore
         $data   .= "defined('SECRETWORD') ? NULL : define('SECRETWORD', 'xgp-".$this->generateToken()."');\n";
         $data   .= "?>";
 
-        fwrite($config_file, $data);
-        fclose($config_file);
+        // create the new file
+        if (fwrite($config_file, $data)) {
 
-        return true;
+            fclose($config_file);
+            
+            return true;
+        }
+        
+        // check if something was created and delete it
+        if (file_exists($config_file)) {
+
+            unlink($config_file);
+        }
+        
+        return false;
     }
 
     /**
-     * method insertDbData
-     * param
-     * return TRUE successfully inserted data | FALSE an error ocurred
+     * insertDbData
+     *
+     * @return boolean
      */
     private function insertDbData()
     {
@@ -371,17 +484,21 @@ class Installation extends XGPCore
     }
 
     /**
-     * method createAccount
-     * param
-     * return TRUE successfully created admin | FALSE an error ocurred
+     * createAccount
+     *
+     * @return negative value if an error ocurred, or 0 if admin account was successfully created
+     *          -1: Some field is empty
+     *          -2: Admin email is invalid
      */
     private function createAccount()
     {
         // validations
-        if (empty($_POST['adm_user']) or empty($_POST['adm_pass']) or
-            empty($_POST['adm_email']) or !FunctionsLib::valid_email($_POST['adm_email'])) {
+        if (empty($_POST['adm_user']) || empty($_POST['adm_pass']) || empty($_POST['adm_email'])) {
+            return -1;
+        }
             
-            return false;
+        if (!FunctionsLib::validEmail($_POST['adm_email'])) {
+            return -2;
         }
 
         // some default values
@@ -389,121 +506,49 @@ class Installation extends XGPCore
         $adm_email  = parent::$db->escapeValue($_POST['adm_email']);
         $adm_pass   = sha1($_POST['adm_pass']);
 
-        // a bunch of of queries :/
-        parent::$db->query("INSERT INTO " . USERS . " SET
-            `user_id` = '1',
-            `user_name` = '". $adm_name ."',
-            `user_email` = '". $adm_email ."',
-            `user_email_permanent` = '". $adm_email ."',
-            `user_ip_at_reg` = '". $_SERVER['REMOTE_ADDR'] . "',
-            `user_agent` = '',
-            `user_authlevel` = '3',
-            `user_home_planet_id` = '1',
-            `user_galaxy` = '1',
-            `user_system` = '1',
-            `user_planet` = '1',
-            `user_current_planet` = '1',
-            `user_register_time` = '". time() ."',
-            `user_password` = '". $adm_pass ."';");
-
-        $this->_planet->createPlanetWithOptions(
-            array(
-                'planet_user_id' => 1,
-                'planet_name' => $adm_name,
-                'planet_galaxy' => 1,
-                'planet_system' => 1,
-                'planet_planet' => 1,
-                'planet_last_update' => time(),
-                'planet_metal' => 500,
-                'planet_crystal' => 500,
-                'planet_deuterium' => 0
-            )
+        // create user and its planet
+        parent::$users->createUserWithOptions(
+            [
+                'user_name' => $adm_name,
+                'user_password' => $adm_pass,
+                'user_email' => $adm_email,
+                'user_email_permanent' => $adm_email,
+                'user_authlevel' => '3',
+                'user_home_planet_id' => '1',
+                'user_galaxy' => 1,
+                'user_system' => 1,
+                'user_planet' => 1,
+                'user_current_planet' => 1,
+                'user_register_time' => time(),
+                'user_ip_at_reg' => $_SERVER['REMOTE_ADDR'],
+                'user_agent' => '',
+                'user_current_page' => ''
+            ]
         );
+        
+        $this->_planet->setNewPlanet(1, 1, 1, 1, $adm_name);
 
-        parent::$db->query("INSERT INTO " . RESEARCH . " SET `research_user_id` = '1';");
-        parent::$db->query("INSERT INTO " . USERS_STATISTICS . " SET `user_statistic_user_id` = '1';");
-        parent::$db->query("INSERT INTO " . PREMIUM . " SET `premium_user_id` = '1';");
-        parent::$db->query("INSERT INTO " . SETTINGS . " SET `setting_user_id` = '1';");
-        parent::$db->query("INSERT INTO " . BUILDINGS . " SET `building_planet_id` = '1';");
-        parent::$db->query("INSERT INTO " . DEFENSES . " SET `defense_planet_id` = '1';");
-        parent::$db->query("INSERT INTO " . SHIPS . " SET `ship_planet_id` = '1';");
-
-        // write the new admin email for support and debugging
-        FunctionsLib::update_config('admin_email', $adm_email);
+        // write the new admin email for support
+        FunctionsLib::updateConfig('admin_email', $adm_email);
 
         return true;
     }
 
     /**
-     * method validateDbData
-     * param
-     * return check inserted data, try connection and return the result
+     * validateDbData
+     *
+     * @return boolean
      */
     private function validateDbData()
     {
-        if (!empty($this->host) && !empty($this->name) &&
-            !empty($this->user) && !empty($this->password) &&
-            !empty($this->prefix)) {
-            
-            return true;
-        } else {
-            
-            return false;
-        }
+        return !empty($this->host) && !empty($this->name) &&
+                !empty($this->user) && !empty($this->prefix);
     }
 
     /**
-     * method checkXmlFile
-     * param
-     * return true if file was found, else if not
-     */
-    private function checkXmlFile()
-    {
-        $needed_config_file     = @fopen(XGP_ROOT . CONFIGS_PATH . 'config.xml', "r");
-        $default_config_file    = @fopen(XGP_ROOT . CONFIGS_PATH . 'config.xml.cfg', "r");
-
-        if (!$needed_config_file) {
-            
-            if (!$default_config_file) {
-                
-                return false;
-            } else {
-                
-                // Will return true if the file was successfully created
-                return $this->createXml();
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * method createXml
-     * param
-     * return true if file was succesfully created
-     */
-    private function createXml()
-    {
-        $location               = XGP_ROOT . CONFIGS_PATH;
-        $default_config_file    = $location . 'config.xml.cfg';
-        $needed_config_file     = $location . 'config.xml';
-
-        @chmod($location, 0777);
-        
-        if (@copy($default_config_file, $needed_config_file)) {
-
-            @chmod($needed_config_file, 0777);
-            
-            return true;
-        }
-        
-        return false;
-    }
-
-    /**
-     * method generateToken
-     * param
-     * return the security token generated
+     * generateToken
+     *
+     * return string
      */
     private function generateToken()
     {
@@ -522,9 +567,12 @@ class Installation extends XGPCore
     }
 
     /**
-     * method saveMessage
-     * param $result
-     * return show the save message
+     * saveMessage
+     *
+     * @param string $message Message
+     * @param string $result  Result
+     *
+     * @return array
      */
     private function saveMessage($message, $result = 'ok')
     {
@@ -547,8 +595,8 @@ class Installation extends XGPCore
 
         $parse['message']   = $message;
 
-        return parent::$page->parse_template(
-            parent::$page->get_template('adm/save_message_view'),
+        return parent::$page->parseTemplate(
+            parent::$page->getTemplate('adm/save_message_view'),
             $parse
         );
     }

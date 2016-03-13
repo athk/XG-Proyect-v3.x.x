@@ -62,9 +62,9 @@ class Database
      */
     public function __construct()
     {
-        global $debug;
-
-        $this->debug               = $debug;
+        require_once XGP_ROOT . 'application/libraries/DebugLib.php';
+        
+        $this->debug               = new DebugLib();
         $this->openConnection();
         $this->magic_quotes_active = get_magic_quotes_gpc();
     }
@@ -78,7 +78,7 @@ class Database
     {
         if (defined('DB_HOST') && defined('DB_USER') && defined('DB_PASS') && defined('DB_NAME')) {
 
-            if (!$this->tryConnection()) {
+            if (!$this->tryConnection(DB_HOST, DB_USER, DB_PASS)) {
 
                 if (!defined('IN_INSTALL')) {
 
@@ -86,11 +86,10 @@ class Database
                         'Database connection failed: ' . $this->connection->connect_error,
                         'SQL Error'
                     ));
-                } else {
-                    return false;
                 }
             } else {
-                if (!$this->tryDatabase()) {
+
+                if (!$this->tryDatabase(DB_NAME)) {
 
                     if (!defined('IN_INSTALL')) {
                         
@@ -98,34 +97,58 @@ class Database
                             'Database selection failed: ' . $this->connection->connect_error,
                             'SQL Error'
                         ));
-                    } else {
-                        return false;
                     }
+                } else {
+
+                    return true;
                 }
             }
+            
+            return false;
         }
     }
 
     /**
      * tryConnection
      *
+     * @param string $host Host
+     * @param string $user User
+     * @param string $pass Pass
+     *
      * @return mysqli
      */
-    public function tryConnection()
+    public function tryConnection($host = '', $user = '', $pass = '')
     {
-        $this->connection  = new mysqli(DB_HOST, DB_USER, DB_PASS);
+        if (empty($host) or empty($user) or empty($pass)) {
 
-        return $this->connection;
+            return;
+        }
+
+        $this->connection  = @new mysqli($host, $user, $pass);
+
+        if ($this->connection->connect_error) {
+
+            return false;
+        }
+        
+        return true;
     }
 
     /**
      * tryDatabase
      *
+     * @param string $db_name DB Name
+     *
      * @return boolean
      */
-    public function tryDatabase()
+    public function tryDatabase($db_name)
     {
-        $db_select  = $this->connection->select_db(DB_NAME);
+        if (empty($db_name)) {
+
+            return false;
+        }
+        
+        $db_select  = @$this->connection->select_db($db_name);
 
         if ($db_select) {
             
@@ -137,11 +160,29 @@ class Database
     }
 
     /**
+     * Test if MySQLi connection was stablished
+     * 
+     * @return boolean
+     */
+    public function testConnection()
+    {
+        if (is_resource($this->connection) or is_object($this->connection)) {
+
+            if ($this->connection->ping()) {
+
+                return true;
+            }   
+        }
+        
+        return false;
+    }
+    
+    /**
      * createPlanetWithOptions
      *
      * @param array $data Data
      *
-     * @return void
+     * @return boolean
      */
     public function closeConnection()
     {
@@ -149,7 +190,11 @@ class Database
 
             $this->connection->close();
             unset($this->connection);
+            
+            return true;
         }
+        
+        return false;
     }
 
     /**
@@ -271,7 +316,7 @@ class Database
      */
     public function numFields($result_set)
     {
-        return $result_set->num_fields;
+        return $result_set->field_count;
     }
 
     /**
@@ -328,7 +373,7 @@ class Database
     {
         if (!$result) {
 
-            $output = "Database query failed: " . mysql_error();
+            $output = "Database query failed: " . $this->connection->error;
 
             // uncomment below line when you want to debug your last query
             $output .= " Last SQL Query: " . $this->last_query;
@@ -368,8 +413,8 @@ class Database
         //CYCLE TROUGHT
         foreach ($tables as $table) {
 
-            $result     = $this->query('SELECT * FROM' . $table);
-            $num_fields = $this->num_fields($result);
+            $result     = $this->query('SELECT * FROM ' . $table);
+            $num_fields = $this->numFields($result);
 
             $return     .= 'DROP TABLE ' . $table . ';';
             $row2       = $this->fetchRow($this->query('SHOW CREATE TABLE ' . $table));

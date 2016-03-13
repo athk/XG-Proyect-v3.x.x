@@ -20,7 +20,7 @@
 	</tr>
 	<tr>
 		<td>{us_user_main_coords}</td>
-		<td><input type="text" name="galaxy" value="{galaxy}" class="input-mini">:<input type="text" name="system" value="{system}" class="input-mini">:<input type="text" name="planet" value="{planet}" class="input-mini"></td>
+		<td><input type="text" name="planet_galaxy" value="{planet_galaxy}" class="input-mini">:<input type="text" name="planet_system" value="{planet_system}" class="input-mini">:<input type="text" name="planet_planet" value="{planet_planet}" class="input-mini"></td>
 	</tr>
 	<tr>
 		<td>{us_user_main_last_update}</td>
@@ -36,7 +36,7 @@
 		</td>
 	</tr>
 	<tr>
-		<td>{us_user_main_destruyed}</td>
+		<td>{us_user_main_destroyed}</td>
 		<td>
 			<select name="planet_destroyed">
 				<option value="1"{dest1}>{us_user_main_planet_destroyed_yes}</option>
@@ -122,10 +122,10 @@
 		<td><input type="text" name="planet_deuterium_max" value="{planet_deuterium_max}"></td>
 	</tr>
 	<tr>
-		<td>{us_user_main_ship_solar_satellite_porcent}</td>
+		<td>{us_user_main_ship_solar_satellite_percent}</td>
 		<td>
-			<select name="planet_ship_solar_satellite_porcent">
-				{planet_ship_solar_satellite_porcent}
+			<select name="planet_ship_solar_satellite_percent">
+				{planet_ship_solar_satellite_percent}
 			</select>
 		</td>
 	</tr>

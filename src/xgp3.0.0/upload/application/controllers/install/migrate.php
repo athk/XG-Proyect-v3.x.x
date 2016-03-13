@@ -1,6 +1,6 @@
 <?php
 /**
- * Migration Controller
+ * Migrate Controller
  *
  * PHP Version 5.5+
  *
@@ -18,7 +18,7 @@ use application\core\XGPCore;
 use application\libraries\FunctionsLib;
 
 /**
- * Migration Class
+ * Migrate Class
  *
  * @category Classes
  * @package  Application
@@ -27,7 +27,7 @@ use application\libraries\FunctionsLib;
  * @link     http://www.xgproyect.org
  * @version  3.0.0
  */
-class Migration extends XGPCore
+class Migrate extends XGPCore
 {
     private $langs;
 
@@ -44,6 +44,7 @@ class Migration extends XGPCore
             
             $this->buildPage();
         } else {
+
             die(FunctionsLib::message($this->langs['ins_no_server_requirements']));
         }
     }
@@ -66,7 +67,7 @@ class Migration extends XGPCore
     private function buildPage()
     {
         parent::$page->display(
-            parent::$page->parse_template(parent::$page->get_template('install/in_migrate'), $this->langs)
+            parent::$page->parseTemplate(parent::$page->getTemplate('install/in_migrate'), $this->langs)
         );
     }
 
@@ -87,4 +88,4 @@ class Migration extends XGPCore
     }
 }
 
-/* end of migration.php */
+/* end of migrate.php */
