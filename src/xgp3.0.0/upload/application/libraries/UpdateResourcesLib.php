@@ -122,6 +122,11 @@ class UpdateResourcesLib extends XGPCore
             }
         }
 
+        $Caps['planet_metal_perhour'] *= 100 + self::getProductionBonusMultiplierByPlanetType("metal", $current_planet['planet_planet']);
+        $Caps['planet_crystal_perhour'] *= 100 + self::getProductionBonusMultiplierByPlanetType("crystal", $current_planet['planet_planet']);
+        $Caps['planet_deuterium_perhour'] *= 100 + self::getProductionBonusMultiplierByPlanetType("deuterium", $current_planet['planet_planet']);
+        $Caps['planet_energy_max'] *= 100 + self::getProductionBonusMultiplierByPlanetType("energy", $current_planet['planet_planet']);
+
         if ($current_planet['planet_type'] == 3) {
 
             $game_metal_basic_income                    = 0;
@@ -410,6 +415,58 @@ class UpdateResourcesLib extends XGPCore
         }
 
         return $Builded;
+    }
+
+    private static function getProductionBonusMultiplierByPlanetPosition($resourceType, $planetPosition)
+    {
+        if($planetPosition < 4) {
+            // Planet Type: Desert
+            // +50% Metal +100% Energy -20% Deuterium
+            switch($resourceType) {
+                case "metal": return 50;
+                case "deuterium": return -20;
+                case "energy": return 100;
+            }
+        }
+        elseif($planetPosition < 7) {
+            // Planet Type: Jungle
+            // +70% Energy -35% Metal
+            switch($resourceType) {
+                case "metal": return -35;
+                case "energy": return 70;
+            }
+        }
+        elseif($planetPosition < 10) {
+            // Planet Type: Volcanic
+            // +50% Metal +35% Crystal +40% Energy -35% Deuterium
+            switch($resourceType) {
+                case "metal": return 50;
+                case "crystal": return 35;
+                case "deuterium": return -35;
+                case "energy": return 40;
+            }
+        }
+        elseif($planetPosition < 13) {
+            // Planet Type: Aquatic
+            // -20% Energy +35% Deuterium -20% Metal
+            switch($resourceType) {
+                case "metal": return -20;
+                case "deuterium": return -35;
+                case "energy": return -20;
+            }
+        }
+        else {
+            // Planet Type: Gas giant
+            // +100% Deuterium -70% Energy -20% Metal -20% Crystal
+            switch($resourceType) {
+                case "metal": return -20;
+                case "crystal": return -20;
+                case "deuterium": return 100;
+                case "energy": return -70;
+            }
+        }
+
+        return 0;
     }
 }
 
